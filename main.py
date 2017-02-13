@@ -15,50 +15,71 @@
 # limitations under the License.
 #
 import webapp2
-
+import re
 import cgi
 
+USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+PASS_RE = re.compile(r"^.{3,20}$")
+EMAIL_RE  = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
+
+
 def validate_email(email):
-    isValidated=False
+    valid_email=False
 
-    return isValidated
+    if not EMAIL_RE.match(email):
+        email_error="Error: That is not a valid email. (example: john@aol.com)"
 
-def validate_password(password):
-    isValidated=False
+    valid_email= not email or EMAIL_RE.match(email)
+    return valid_email
 
-    return isValidated
+def validate_password(password, password_confirm):
+    valid_password=False
+    if not password:
+        password_error="Error: Please enter a password (3-20 characters)"
+    elif not PASS_RE.match(password):
+        password_error="Error: That is not a valid password. Password must be 3-20 characters."
+    if not password_confirm:
+        password_confirm_error="Error: Please confirm your password"
+    elif password_confirm != password:
+        password_confirm_error="Error: Passwords do not match."
 
-def validate_password_confirm(password_confirm,password):
-    isValidated=False
 
-    return isValidated
+    valid_password= password and password_confirm and password == password_confirm and PASS_RE.match(password)
+    return valid_password
+
 
 def vailidate_username(username):
-    isValidated=False
+    valid_username=False
+    if not username:
+        username_error="Error: Please enter a username (3-20 alphanumeric characters)"
+    elif not USER_RE.match(username):
+        username_error="Error: That is not a valid username. Username must be 3-20 alphanumeric characters."
 
-    return isValidated
+    valid_username= username and USER_RE.match(username)
+    return valid_username
 
-def validate_form(username, password,password_confirm,email):
-    isValidated=False
 
-    return isValidated
 
-def build_page():
+def build_signup_page(email_error,password_error,password_confirm_error,username_error):
+    style="<style> label.error{ color: red } </style>"
     header="<h2>User Signup</h2>"
-    username_input = "<label>Username:</label><input name='username' type='text' ></input>"
-    password_input="<label>Password:</label><input type='password' name='password'></input>"
-    password_confirm="<label>Confirm Password:</label><input type='password' name='password_confirm'></input>"
-    email_input="<label>Email Address (optional)</label><input type='text' name=email></input>"
+    username_input = "<label>Username:</label><input name='username' type='text' ></input><label class='error'><strong> "+username_error+"</strong></label>"
+    password_input="<label>Password:</label><input type='password' name='password'></input><label class='error'><strong> "+password_error+"</strong></label>"
+    password_confirm="<label>Confirm Password:</label><input type='password' name='password_confirm'></input><label class='error'><strong> "+password_confirm_error+"</strong></label>"
+    email_input="<label>Email Address (optional)</label><input type='text' name=email></input><label class='error'><strong> "+email_error+"</strong></label>"
     submit="<input type='submit'>"
     form="<form method=post>"+username_input +"<br>"+ password_input + "<br>"+password_confirm+"<br>"+email_input+"<br>"+submit+"</form>"
-    content=header+form
+    content=style+header+form
     return content
 
-
+def build_welcome_page(username):
+    header="<h2>Welcome <em>"+username+"</em></h2>"
+    content=header
+    return content
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
-        content=build_page()
+        content=build_signup_page("","","","")
         self.response.write(content)
 
     def post(self):
@@ -66,19 +87,17 @@ class MainHandler(webapp2.RequestHandler):
         password=self.request.get("password")
         password_confirm=self.request.get("password_confirm")
         email=self.request.get("email")
-        user_error=""
+        username_error=""
         password_error=""
         password_confirm_error=""
         email_error=""
 
-        vailidate_username(username)
-        validate_password(password)
-        validate_password_confirm(password_confirm,password)
-        validate_form(username, password, password_confirm, email)
-
-
-        content=build_page()
-        self.response.write(content)
+        if vailidate_username(username) and validate_password(password,password_confirm) and validate_email(email):
+            content=build_welcome_page(username)
+            self.response.write(content)
+        else:
+            content=build_signup_page(email_error,password_error,password_confirm_error,username_error)
+            self.response.write(content)
 
 app = webapp2.WSGIApplication([
 	('/', MainHandler)
