@@ -109,9 +109,12 @@ def build_signup_page(email_error,password_error,password_confirm_error,username
     content=style+header+form
     return content
 
-def build_welcome_page(username):
+def build_welcome_page(username,email):
     header="<h2>Welcome <em>"+username+"</em></h2>"
-    content=header
+    email_header=""
+    if email:
+        email_header="<p>Your email address: <em>"+email+"</em> has been registered."
+    content=header+email_header
     return content
 
 class MainHandler(webapp2.RequestHandler):
@@ -130,7 +133,7 @@ class MainHandler(webapp2.RequestHandler):
 
 
         if vailidate_username(username) and validate_password(password,password_confirm) and validate_email(email):
-            content=build_welcome_page(username)
+            content=build_welcome_page(username,email)
             self.response.write(content)
         else:
             set_username_error(username)
